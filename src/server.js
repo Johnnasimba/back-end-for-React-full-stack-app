@@ -1,13 +1,28 @@
 const express = require('express');
 const bodyParser = require('body-parser')
 
+const articleInfo = {
+    'learn-react': {
+        upvotes: 0
+    },
+    'learn-node': {
+        upvotes: 0
+    },
+    'my-thoughts-on-resumes': {
+        upvotes:0
+    }
+}
+
+
+
 const app = express();
 const PORT = 8000;
 app.use(bodyParser.json())
-app.get('/hello/:name', (req, res)=> res.send(`hello ${req.params.name}`))
-app.get('/hello', (req, res) => res.send("Always keep learning something new"))
-app.post('/hello', (req, res)=> res.send(`Hello ${req.body.name}!` ))
-
+app.post('/api/articles/:name/upvote', (req, res) => {
+    const articleName = req.params.name
+    const newUpvotes = articleInfo[articleName].upvotes += 1;
+    res.status(200).send(`${articleName} now has ${newUpvotes} upvotes`)
+})
 
 
 app.listen(PORT, () => {
