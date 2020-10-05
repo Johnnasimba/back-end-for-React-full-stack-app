@@ -1,30 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser')
 const MongoClient = require('mongodb').MongoClient;
-
-
-
-/* const url = "mongodb+srv://JOHN:0995816060@cluster0.bfy6i.mongodb.net/Articles?retryWrites=true&w=majority";
-
-
-MongoClient.connect(url,{ useNewUrlParser: true, useUnifiedTopology: true }, function(err, db) {
-    if (err) throw err;
-    console.log("you are connected to the database");
-    const query = db.db('Articles')
-    query.collection("articleList").find({}).toArray( (err, result)=> {
-        if (err) throw err;
-        console.log(result);
-        db.close();
-    })
-   
-  }); */
-
-
-
-
+const path = require('path');
 
 
 const app = express();
+app.use(express.static(path.join(__dirname, '/build')));
 const PORT = 8000;
 app.use(bodyParser.json())
 
@@ -91,7 +72,9 @@ app.post('/api/articles/:name/add-comment', (req, res) => {
     }, res)
 }) 
 
-
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname + '/build/index.html'));
+})
 app.listen(PORT, () => {
     console.log(` Server Listening on Port ${PORT}`)
 })
