@@ -48,11 +48,36 @@ app.get('/api/articles/:name', async (req, res) => {
 
 })
 
-app.post('/api/articles/:name/upvote', (req, res) => {
+
+
+app.post('/api/articles/:name/upvote', async (req, res) => {
+
+    try {
+    const url = "mongodb+srv://JOHN:0995816060@cluster0.bfy6i.mongodb.net/Articles?retryWrites=true&w=majority";
     const articleName = req.params.name
-    const newUpvotes = articleInfo[articleName].upvotes += 1;
-    res.status(200).send(`${articleName} now has ${newUpvotes} upvotes`)
+    const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });        
+    const db = client.db('Articles') 
+    const articleInfo = await db.collection("articleList").findOne({ name: articleName });
+    await db.collection("articleList").updateOne({ name: articleName },
+        {
+            '$set': {
+                upvotes: articleInfo.upvotes + 1,
+            },
+        });
+    const updatedArticleInfo = await db.collection("articleList").findOne({ name: articleName });
+    res.status(200).json(updatedArticleInfo);
+
+    client.close();
+        
+    } catch (error) {
+        res.status(500).json({message: 'Error connecting to db', error}) 
+        console.log(error);
+    }
+    
 })
+
+
+
 app.post('/api/articles/:name/add-comment', (req, res) => {
     const { name, text } = req.body
     const articleName = req.params.name
