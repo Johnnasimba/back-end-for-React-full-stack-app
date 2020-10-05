@@ -28,23 +28,29 @@ const app = express();
 const PORT = 8000;
 app.use(bodyParser.json())
 
+const withDB = async (operations) => {
+    try {
+        const url = "mongodb+srv://JOHN:0995816060@cluster0.bfy6i.mongodb.net/Articles?retryWrites=true&w=majority";
+        const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+    
+            
+        const db = client.db('Articles')
+       await  operations(db);
+
+        client.close();  
+        } catch (error) {
+            res.status(500).json({message: 'Error connecting to db', error})
+        }
+}
+
 
 app.get('/api/articles/:name', async (req, res) => {
-    try {
-    const url = "mongodb+srv://JOHN:0995816060@cluster0.bfy6i.mongodb.net/Articles?retryWrites=true&w=majority";
-
-    const articleName = req.params.name
-    const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
-
-        
-    const query = client.db('Articles')
-    const articleInfo = await query.collection("articleList").findOne({ name: articleName })
-    res.status(200).json(articleInfo);
-    client.close();  
-    } catch (error) {
-        res.status(500).json({message: 'Error connecting to db', error})
-    }
-        
+    withDB(async (db) => {
+        const articleName = req.params.name
+        const articleInfo = await db.collection("articleList").findOne({ name: articleName })
+        res.status(200).json(articleInfo);   
+   }, res)
+    
 
 })
 
@@ -52,38 +58,37 @@ app.get('/api/articles/:name', async (req, res) => {
 
 app.post('/api/articles/:name/upvote', async (req, res) => {
 
-    try {
-    const url = "mongodb+srv://JOHN:0995816060@cluster0.bfy6i.mongodb.net/Articles?retryWrites=true&w=majority";
-    const articleName = req.params.name
-    const client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });        
-    const db = client.db('Articles') 
-    const articleInfo = await db.collection("articleList").findOne({ name: articleName });
-    await db.collection("articleList").updateOne({ name: articleName },
-        {
-            '$set': {
-                upvotes: articleInfo.upvotes + 1,
-            },
-        });
-    const updatedArticleInfo = await db.collection("articleList").findOne({ name: articleName });
-    res.status(200).json(updatedArticleInfo);
+    withDB(async (db) => {
+        const articleName = req.params.name
 
-    client.close();
-        
-    } catch (error) {
-        res.status(500).json({message: 'Error connecting to db', error}) 
-        console.log(error);
-    }
+        const articleInfo = await db.collection("articleList").findOne({ name: articleName });
+        await db.collection("articleList").updateOne({ name: articleName },
+            {
+                '$set': {
+                    upvotes: articleInfo.upvotes + 1,
+                },
+            });
+        const updatedArticleInfo = await db.collection("articleList").findOne({ name: articleName });
+        res.status(200).json(updatedArticleInfo);
+    }, res)  
     
 })
 
 
 
 app.post('/api/articles/:name/add-comment', (req, res) => {
-    const { name, text } = req.body
+    const { username, text } = req.body
     const articleName = req.params.name
-    articleInfo[articleName].comments.push({ name, text });
-    res.status(200).send(articleInfo[articleName])
-
+    withDB(async (db) => {
+        const articleInfo =  await db.collection('articleList').findOne({ name: articleName });
+        await db.collection('articleList').updateOne({ name: articleName }, {
+            '$set': {
+                comments : articleInfo.comments.concat({username, text}),
+            },
+        })
+        const updatedArticleInfo = await db.collection("articleList").findOne({ name: articleName });
+        res.status(200).json(updatedArticleInfo);
+    }, res)
 }) 
 
 
